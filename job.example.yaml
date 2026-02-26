@@ -1,0 +1,8 @@
+name: resnet50_trial
+command: python train.py --config confs/r50.yaml
+cpus: 4
+gpus: 1
+distributed: false
+workdir: /path/to/my-project
+env:
+  WANDB_MODE: offline

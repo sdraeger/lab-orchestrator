@@ -1,0 +1,9 @@
+head: node32
+head_address: node32
+workers:
+  - node34
+  - puma
+ssh_user: your-username
+ray_port: 6379
+dashboard_port: 8265
+ray_bin: /path/to/ray

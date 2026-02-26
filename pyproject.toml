@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lab-orchestrator"
+version = "0.1.0"
+description = "Ray-based cluster script orchestration for lab machines"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "ray[default]>=2.9.0",
+  "psutil>=5.9.0",
+  "PyYAML>=6.0.0",
+]
+
+[project.scripts]
+lab-orch = "lab_orchestrator.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lab_orchestrator*"]
