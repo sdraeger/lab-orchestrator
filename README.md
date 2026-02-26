@@ -1,4 +1,4 @@
-# Lab Orchestrator (Ray)
+# Lab Orchestrator
 
 A lightweight system to run and track experiment scripts across lab machines with Ray.
 
