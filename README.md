@@ -2,6 +2,13 @@
 
 A lightweight system to run and track experiment scripts across lab machines with Ray.
 
+## Practical Use Case
+
+This package was developed to solve one problem: in computing architectures with multiple nodes without a job submission system, each user needs to search for an optimal compute
+node or set of nodes to run their custom compute scripts. One solution is to ssh into multiple nodes and create per-node `tmux` sessions, however, this does not scale with job complexity
+and resource utilization, especially by other users. `lab-orchestrator` solves this problem by spawning lightweight ray daemons on each node, all of which communicate with one central node.
+The central node is then used as the entrypoint for job submission and resource overviewing.
+
 ## What it gives you
 
 - Cluster-wide overview of machine load and GPU usage (`lab-orch overview`)
