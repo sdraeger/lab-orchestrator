@@ -14,7 +14,11 @@ The central node is then used as the entrypoint for job submission and resource 
 - Cluster-wide overview of machine load and GPU usage (`lab-orch overview`)
 - Best-node placement for new jobs with constraints (`--cpus`, `--gpus`)
 - Multi-node distributed scheduling for large GPU requests (e.g. `8 GPUs` across machines)
+- Pluggable placement strategies (`--scheduler balanced|fair-share`)
 - Detached background execution with persistent state (SQLite)
+- Policy controls: per-user quotas and host allow/deny lists
+- Built-in command retry policy (`--max-retries`, `--retry-backoff-seconds`)
+- Reproducibility metadata capture (git, runtime, request hash, custom metadata)
 - Job lifecycle commands: submit, list, status, logs, cancel
 - Optional SSH bootstrap for starting/stopping Ray on a head+worker set
 
@@ -76,6 +80,40 @@ lab-orch --cluster-config cluster.yaml --ray-address auto overview
 When `--ray-address auto` is used with `--cluster-config`, it resolves to `head_address:ray_port`.
 This probes each Ray node and reports CPU load, free memory, estimated free GPUs, and detected GPU users.
 
+## 2.1) Optional policy controls
+
+Start from the included `policy.example.yaml` and adapt values:
+
+```bash
+cp policy.example.yaml policy.yaml
+```
+
+Example `policy.yaml`:
+
+```yaml
+name: lab-default
+max_active_jobs_per_user: 6
+max_cpus_per_user: 64
+max_gpus_per_user: 8
+allowed_hosts:
+  - node32
+  - node34
+denied_hosts:
+  - puma
+```
+
+Use it globally with any command:
+
+```bash
+lab-orch --policy-config policy.yaml jobs
+```
+
+CLI flags can override file values:
+
+```bash
+lab-orch --policy-config policy.yaml --max-gpus-per-user 4 --allow-host node32 overview
+```
+
 ## 3) Submit experiments by resource needs
 
 ```bash
@@ -84,6 +122,10 @@ lab-orch submit \
   --command "python train.py --config confs/r50.yaml" \
   --cpus 4 \
   --gpus 1 \
+  --scheduler fair-share \
+  --max-retries 2 \
+  --retry-backoff-seconds 3 \
+  --metadata experiment=baseline \
   --workdir /path/to/my-project
 ```
 
@@ -127,6 +169,10 @@ command: python train.py --config confs/r50.yaml
 cpus: 4
 gpus: 1
 distributed: false
+max_retries: 2
+retry_backoff_seconds: 3
+metadata:
+  experiment: baseline
 workdir: /path/to/my-project
 env:
   WANDB_MODE: offline
@@ -172,6 +218,8 @@ Override via flags or env vars:
 - `LAB_ORCH_NAMESPACE`
 - `LAB_ORCH_DB`
 - `LAB_ORCH_LOGS`
+- `LAB_ORCH_SCHEDULER`
+- `LAB_ORCH_POLICY_CONFIG`
 
 ## Notes
 
@@ -179,3 +227,13 @@ Override via flags or env vars:
 - GPU usage from non-Ray processes is detected via `nvidia-smi` when available.
 - If `nvidia-smi` is absent on a node, GPU fields fall back to Ray-advertised GPU count.
 - Distributed jobs reserve resources per node in the DB, so `overview` and future placements account for multi-node reservations.
+
+## Development checks
+
+Run local hygiene checks before committing:
+
+```bash
+PYENV_VERSION=3.10.0 ruff check .
+PYENV_VERSION=3.10.0 ruff format --check .
+pytest -q --cov=lab_orchestrator --cov-report=term-missing
+```

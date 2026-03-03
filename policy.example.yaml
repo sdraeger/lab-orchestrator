@@ -1,0 +1,9 @@
+name: lab-default
+max_active_jobs_per_user: 6
+max_cpus_per_user: 64
+max_gpus_per_user: 8
+allowed_hosts:
+  - node32
+  - node34
+denied_hosts:
+  - puma
