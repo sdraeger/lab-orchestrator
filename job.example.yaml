@@ -3,6 +3,13 @@ command: python train.py --config confs/r50.yaml
 cpus: 4
 gpus: 1
 distributed: false
+# Optional: pin to one host/ip/node_id and expose only selected GPU indices.
+# target_host: node32
+# visible_gpus: "0,2"
+# Optional: explicit multi-host virtual GPU set (repeat entries as needed).
+# gpu_bind:
+#   - node32:0,2
+#   - node34:1
 workdir: /path/to/my-project
 env:
   WANDB_MODE: offline

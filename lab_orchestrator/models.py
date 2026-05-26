@@ -22,6 +22,12 @@ class NodeSnapshot:
 
 
 @dataclass(slots=True)
+class GpuBinding:
+    host: str
+    gpu_index: int
+
+
+@dataclass(slots=True)
 class JobRequest:
     name: str
     command: str
@@ -29,7 +35,15 @@ class JobRequest:
     gpus: float
     workdir: str
     env: dict[str, str]
+    command_argv: list[str] = field(default_factory=list)
+    use_shell: bool = True
     distributed: bool = False
+    submit_user: str | None = None
+    max_retries: int = 0
+    retry_backoff_seconds: float = 5.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+    explicit_gpu_bindings: list[GpuBinding] = field(default_factory=list)
+    systemd_properties: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
