@@ -2,7 +2,7 @@
 
 `lab-orchestrator` runs ordinary shell or Python jobs from one lab machine while using compute resources on another machine.
 
-This refactor removes Ray entirely. The control plane is now:
+It uses:
 
 - a local CLI and SQLite state database,
 - a YAML registry of machines,
@@ -10,7 +10,7 @@ This refactor removes Ray entirely. The control plane is now:
 - `systemd-run --user` on the target host for detached job supervision,
 - shared NAS paths for code, logs, and outputs.
 
-That matches the actual problem better than a distributed Python runtime: pick a host, start a process there, track it, and stream logs back through a feel-local CLI.
+The workflow is command-oriented: pick a host, start a process there, track it, and stream logs back through a local CLI.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ That matches the actual problem better than a distributed Python runtime: pick a
 
 for SSH-launched `systemd --user` commands, so non-login shells can still manage transient user units.
 
-## What It Gives You
+## Features
 
 - Cluster-wide overview of registered machines and live load (`lab-orch overview`)
 - Free and reserved GPU index visibility in the overview table
@@ -130,7 +130,7 @@ Probe all registered machines:
 lab-orch overview
 ```
 
-This reports:
+Output columns include:
 
 - CPU load
 - free memory
@@ -279,9 +279,9 @@ lab-orch run \
   -- uv run python train.py
 ```
 
-## Smoke Script
+## Smoke Checks
 
-The repo includes a small standalone smoke script at `test.py` for periodic orchestration checks.
+`test.py` runs a small CPU/CUDA check and prints a JSON payload for periodic orchestration checks.
 
 CPU smoke test:
 
@@ -305,9 +305,7 @@ The script prints a single JSON payload with hostname, Torch status, CUDA visibi
 
 ## Distributed GPU Jobs
 
-True single-process cross-machine "one giant CUDA box" virtualization is not what `lab-orch` provides. The feasible model is distributed multi-process launch: one worker process per GPU, across one or more machines, with the usual env vars for PyTorch/JAX-style distributed execution.
-
-This is already supported by the current implementation.
+Distributed GPU jobs use one worker process per GPU, across one or more machines, with the usual env vars for PyTorch/JAX-style distributed execution.
 
 If a request cannot fit on one machine, the orchestrator can pack GPUs across nodes.
 
@@ -359,9 +357,9 @@ print(ctx.current_index) # this worker's global virtual GPU id
 print(ctx.current)       # host / node / physical GPU metadata
 ```
 
-Your script must still support distributed launch via env vars if it wants to use compute from more than one machine. The virtual GPU helper gives you a unified logical pool; it does not make remote GPUs appear as local CUDA devices inside one process.
+Scripts that use compute from more than one machine still need distributed-launch support through environment variables. The virtual GPU helper exposes a unified logical pool; remote GPUs do not appear as local CUDA devices inside one process.
 
-The repo includes `distributed_smoke.py` as a periodic multi-node smoke test. It initializes `torch.distributed` when `WORLD_SIZE > 1`, performs an `all_reduce`, and prints one JSON payload per rank including the virtual GPU context.
+`distributed_smoke.py` runs a multi-node smoke test. It initializes `torch.distributed` for orchestrated distributed jobs, performs an `all_reduce`, and prints one JSON payload per rank including the virtual GPU context.
 
 In `--backend auto` mode, `distributed_smoke.py` prefers `gloo` for multi-host jobs and `nccl` for single-host CUDA jobs. That makes the default smoke test validate orchestration, rendezvous, and GPU assignment without depending on cluster-specific NCCL tuning. Use `--backend nccl` when you explicitly want to validate multi-node NCCL as well.
 
